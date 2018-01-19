@@ -13,8 +13,8 @@ public class WebSocketConfig extends AbstractWebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
         // enable an in-memory message broker, sending messages
-        // to clients with an empty prefix.
-        config.enableSimpleBroker("");
+        // to clients with an prefix of topic.
+        config.enableSimpleBroker("/topic");
 
         // configure the prefix which is appended to the routes
         // on which websocket controllers are listening on.

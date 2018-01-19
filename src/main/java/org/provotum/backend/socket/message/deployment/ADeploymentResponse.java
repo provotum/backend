@@ -1,28 +1,36 @@
 package org.provotum.backend.socket.message.deployment;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.provotum.backend.socket.message.contract.Contract;
+
+import java.util.UUID;
 
 public abstract class ADeploymentResponse {
 
-    protected String address;
-    protected Map<String, Object> error;
+    private String status;
+    private String message;
+    private Contract contract;
+    private String id;
 
-    public ADeploymentResponse(String address, Map<String, Object> error) {
-        this.address = address;
-        this.error = error;
+    public ADeploymentResponse(String status, String message, Contract contract) {
+        this.status = status;
+        this.message = message;
+        this.contract = contract;
+        this.id = UUID.randomUUID().toString();
     }
 
-    public ADeploymentResponse(String address) {
-        this.address = address;
-        this.error = new HashMap<>();
+    public String getStatus() {
+        return status;
     }
 
-    public String getAddress() {
-        return address;
+    public String getMessage() {
+        return message;
     }
 
-    public Map<String, Object> getError() {
-        return error;
+    public Contract getContract() {
+        return contract;
+    }
+
+    public String getId() {
+        return id;
     }
 }
