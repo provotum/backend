@@ -3,3 +3,4 @@ lib
 .idea
 target
 *.iml
+eth-contracts-build
