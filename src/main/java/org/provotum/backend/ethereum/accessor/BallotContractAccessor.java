@@ -11,10 +11,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.tuples.generated.Tuple2;
 import rx.Observer;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
+import java.math.BigInteger;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -67,6 +71,121 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
             Ballot.GAS_PRICE,
             Ballot.GAS_LIMIT
         );
+    }
+
+    @Override
+    public String remove(String contractAddress) throws Exception {
+        return Ballot.load(
+            contractAddress,
+            this.web3j,
+            this.ethereumConfiguration.getWalletCredentials(),
+            Ballot.GAS_PRICE,
+            Ballot.GAS_LIMIT
+        ).destroy().send().getTransactionHash();
+    }
+
+    /**
+     * Open the voting on a Ballot contract at the specified address.
+     *
+     * @param contractAddress The ballot's contract address.
+     * @return The transaction hash.
+     * @throws Exception If opening the vote failed.
+     */
+    public String openVoting(String contractAddress) throws Exception {
+        return Ballot.load(
+            contractAddress,
+            this.web3j,
+            this.ethereumConfiguration.getWalletCredentials(),
+            Ballot.GAS_PRICE,
+            Ballot.GAS_LIMIT
+        ).openVoting().send().getTransactionHash();
+    }
+
+    /**
+     * Close the voting on a Ballot contract specified by its address.
+     *
+     * @param contractAddress The ballot's contract address.
+     * @return The transaction hash.
+     * @throws Exception If closing the vote failed.
+     */
+    public String closeVoting(String contractAddress) throws Exception {
+        return Ballot.load(
+            contractAddress,
+            this.web3j,
+            this.ethereumConfiguration.getWalletCredentials(),
+            Ballot.GAS_PRICE,
+            Ballot.GAS_LIMIT
+        ).closeVoting().send().getTransactionHash();
+    }
+
+    /**
+     * Vote on the ballot.
+     *
+     * @param contractAddress The address of the ballot.
+     * @param vote            The vote.
+     * @return The transaction hash.
+     * @throws Exception If voting failed.
+     */
+    public String vote(String contractAddress, String vote) throws Exception {
+        Ballot ballot = Ballot.load(
+            contractAddress,
+            this.web3j,
+            this.ethereumConfiguration.getWalletCredentials(),
+            Ballot.GAS_PRICE,
+            Ballot.GAS_LIMIT
+        );
+
+        // TODO: we might need to subscribe again to vote events in the case when the ballot contract is not deployed but only referenced.
+
+        return ballot.vote(vote).send().getTransactionHash();
+    }
+
+    /**
+     * Get the voting results from the Ballot at the specified contract.
+     *
+     * @param contractAddress The address of the contract.
+     * @return A map having the sender's address with her corresponding vote.
+     * @throws Exception If fetching the voting result failed.
+     */
+    public Map<String, String> getResults(String contractAddress) throws Exception {
+        Ballot ballot = Ballot.load(
+            contractAddress,
+            this.web3j,
+            this.ethereumConfiguration.getWalletCredentials(),
+            Ballot.GAS_PRICE,
+            Ballot.GAS_LIMIT
+        );
+
+        BigInteger totalVotes = ballot.getTotalVotes().send();
+        logger.info("Fetched a total of " + totalVotes + " votes from the Ballot contract at " + contractAddress);
+
+        Map<String, String> votes = new HashMap<>();
+        for (BigInteger i = BigInteger.ZERO; i.compareTo(totalVotes) < 0; i = i.add(BigInteger.ONE)) {
+            Tuple2<String, String> tuple = ballot.getVote(i).send();
+
+            votes.put(tuple.getValue1(), tuple.getValue2());
+        }
+
+        return votes;
+    }
+
+    /**
+     * Fetch the voting question from the Ballot contract.
+     *
+     * @param contractAddress The address of the ballot contract.
+     * @return The question.
+     * @throws Exception If fetching the question failed.
+     */
+    public String getQuestion(String contractAddress) throws Exception {
+        Ballot ballot = Ballot.load(
+            contractAddress,
+            this.web3j,
+            this.ethereumConfiguration.getWalletCredentials(),
+            Ballot.GAS_PRICE,
+            Ballot.GAS_LIMIT
+        );
+
+        return ballot.getProposedQuestion().send();
     }
 
     private void subscribeToVoteEvent(Ballot ballot) {

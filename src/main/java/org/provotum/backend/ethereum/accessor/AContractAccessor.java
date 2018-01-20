@@ -20,4 +20,13 @@ public abstract class AContractAccessor<T extends Contract, C> {
      * @return The referenced contract.
      */
     public abstract T load(String contractAddress);
+
+    /**
+     * Remove the contract from the given address.
+     *
+     * @param contractAddress The contract's address.
+     * @return The transaction hash.
+     * @throws Exception If removing the contract failed.
+     */
+    public abstract String remove(String contractAddress) throws Exception;
 }

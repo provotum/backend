@@ -15,6 +15,7 @@ import rx.Observer;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -64,6 +65,17 @@ public class ZeroKnowledgeContractAccessor extends AContractAccessor<ZeroKnowled
             Ballot.GAS_PRICE,
             Ballot.GAS_LIMIT
         );
+    }
+
+    @Override
+    public String remove(String contractAddress) throws Exception {
+        return ZeroKnowledgeVerificator.load(
+            contractAddress,
+            this.web3j,
+            this.ethereumConfiguration.getWalletCredentials(),
+            ZeroKnowledgeVerificator.GAS_PRICE,
+            ZeroKnowledgeVerificator.GAS_LIMIT
+        ).destroy().send().getTransactionHash();
     }
 
     private void subscribeToProofEvent(ZeroKnowledgeVerificator zkVerificator) {
