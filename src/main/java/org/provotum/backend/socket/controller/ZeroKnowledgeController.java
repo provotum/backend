@@ -1,8 +1,9 @@
 package org.provotum.backend.socket.controller;
 
-import org.provotum.backend.socket.message.contract.Contract;
-import org.provotum.backend.socket.message.zeroknowledge.ZeroKnowledgeDeploymentRequest;
-import org.provotum.backend.socket.message.zeroknowledge.ZeroKnowledgeDeploymentResponse;
+import org.provotum.backend.socket.message.base.Status;
+import org.provotum.backend.socket.message.deployment.ZeroKnowledgeDeploymentRequest;
+import org.provotum.backend.socket.message.deployment.ZeroKnowledgeDeploymentResponse;
+import org.provotum.backend.socket.message.partial.contract.Contract;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
@@ -19,6 +20,6 @@ public class ZeroKnowledgeController {
     public ZeroKnowledgeDeploymentResponse deployBallot(ZeroKnowledgeDeploymentRequest request) {
         logger.info("Received zero-knowledge deployment request");
 
-        return new ZeroKnowledgeDeploymentResponse("success", "Deployment successful", new Contract("zero-knowledge", "0x123"));
+        return new ZeroKnowledgeDeploymentResponse(Status.SUCCESS, "Deployment successful", new Contract("zero-knowledge", "0x123"));
     }
 }

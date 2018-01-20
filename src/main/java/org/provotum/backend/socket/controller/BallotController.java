@@ -1,8 +1,9 @@
 package org.provotum.backend.socket.controller;
 
-import org.provotum.backend.socket.message.ballot.BallotDeploymentRequest;
-import org.provotum.backend.socket.message.ballot.BallotDeploymentResponse;
-import org.provotum.backend.socket.message.contract.Contract;
+import org.provotum.backend.socket.message.base.Status;
+import org.provotum.backend.socket.message.deployment.BallotDeploymentRequest;
+import org.provotum.backend.socket.message.deployment.BallotDeploymentResponse;
+import org.provotum.backend.socket.message.partial.contract.Contract;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
@@ -19,6 +20,6 @@ public class BallotController {
     public BallotDeploymentResponse deployBallot(BallotDeploymentRequest request) {
         logger.info("Received ballot deployment request");
 
-        return new BallotDeploymentResponse("success", "Deployment successful", new Contract("ballot", "0x123"));
+        return new BallotDeploymentResponse(Status.SUCCESS, "Deployment successful", new Contract("ballot", "0x123"));
     }
 }

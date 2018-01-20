@@ -1,11 +1,11 @@
-package org.provotum.backend.socket.message.publickey;
+package org.provotum.backend.socket.message.partial.publickey;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class PublicKey {
 
-    protected Integer p;
-    protected Integer q;
+    private Integer p;
+    private Integer q;
 
     public PublicKey(@JsonProperty("p") Integer p, @JsonProperty("q") Integer q) {
         this.p = p;
