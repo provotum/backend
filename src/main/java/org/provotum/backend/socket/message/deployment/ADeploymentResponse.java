@@ -2,7 +2,7 @@ package org.provotum.backend.socket.message.deployment;
 
 import org.provotum.backend.socket.message.base.AResponse;
 import org.provotum.backend.socket.message.base.Status;
-import org.provotum.backend.socket.message.partial.contract.Contract;
+import org.provotum.backend.socket.message.partial.Contract;
 
 public abstract class ADeploymentResponse extends AResponse {
 

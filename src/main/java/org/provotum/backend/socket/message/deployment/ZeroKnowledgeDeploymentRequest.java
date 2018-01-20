@@ -2,7 +2,7 @@ package org.provotum.backend.socket.message.deployment;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.provotum.backend.socket.message.base.ARequest;
-import org.provotum.backend.socket.message.partial.publickey.PublicKey;
+import org.provotum.backend.socket.message.partial.PublicKey;
 
 
 public class ZeroKnowledgeDeploymentRequest extends ARequest {

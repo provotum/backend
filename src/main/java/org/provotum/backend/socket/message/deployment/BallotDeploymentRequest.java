@@ -2,27 +2,27 @@ package org.provotum.backend.socket.message.deployment;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.provotum.backend.socket.message.base.ARequest;
-
-import java.util.Map;
+import org.provotum.backend.socket.message.partial.Addresses;
+import org.provotum.backend.socket.message.partial.Election;
 
 public class BallotDeploymentRequest extends ARequest {
 
-    private Map<String, Object> addresses;
-    private Map<String, Object> election;
+    private Addresses addresses;
+    private Election election;
 
     public BallotDeploymentRequest(
-            @JsonProperty("addresses") Map<String, Object> addresses,
-            @JsonProperty("election") Map<String, Object> election
+        @JsonProperty("addresses") Addresses addresses,
+        @JsonProperty("election") Election election
     ) {
         this.addresses = addresses;
         this.election = election;
     }
 
-    public Map<String, Object> getAddresses() {
+    public Addresses getAddresses() {
         return addresses;
     }
 
-    public Map<String, Object> getElection() {
+    public Election getElection() {
         return election;
     }
 }

@@ -1,4 +1,4 @@
-package org.provotum.backend.socket.message.partial.publickey;
+package org.provotum.backend.socket.message.partial;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

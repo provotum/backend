@@ -18,7 +18,7 @@ compile:
 # Note: Generated files starting with "Abstract" are skipped since such
 #       files will only hold contract interface definitions.
 wrappers: compile
-	for fullFile in eth-contracts/contracts/*.sol; do filename=$$(basename "$$fullFile"); filename="$${filename%.*}"; if [[ $$filename == Abstract* ]]; then continue; fi; web3j solidity generate eth-contracts-build/"$$filename".bin eth-contracts-build/"$$filename".abi -o src/main/java -p org.provotum.ethereum.wrappers; done;
+	for fullFile in eth-contracts/contracts/*.sol; do filename=$$(basename "$$fullFile"); filename="$${filename%.*}"; if [[ $$filename == Abstract* ]]; then continue; fi; web3j solidity generate eth-contracts-build/"$$filename".bin eth-contracts-build/"$$filename".abi -o src/main/java -p org.provotum.backend.ethereum.wrappers; done;
 
 # Clean the compiled contract codes.
 # Note, that generated Java code is not removed.

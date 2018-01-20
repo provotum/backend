@@ -1,4 +1,4 @@
-package org.provotum.backend.socket.message.partial.contract;
+package org.provotum.backend.socket.message.partial;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

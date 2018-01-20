@@ -1,4 +1,4 @@
-package org.provotum.ethereum.wrappers;
+package org.provotum.backend.ethereum.wrappers;
 
 import java.math.BigInteger;
 import java.util.Arrays;
