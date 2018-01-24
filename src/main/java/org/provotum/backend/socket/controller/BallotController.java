@@ -8,8 +8,7 @@ import org.provotum.backend.socket.message.base.Status;
 import org.provotum.backend.socket.message.deployment.BallotDeploymentRequest;
 import org.provotum.backend.socket.message.deployment.BallotDeploymentResponse;
 import org.provotum.backend.socket.message.partial.Contract;
-import org.provotum.backend.socket.message.vote.VoteRequest;
-import org.provotum.backend.socket.message.vote.VoteResponse;
+import org.provotum.backend.socket.message.vote.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -36,6 +35,8 @@ public class BallotController {
     @SendTo("/topic/deployments")
     public BallotDeploymentResponse deployBallot(BallotDeploymentRequest request) {
         logger.info("Received ballot deployment request");
+
+        // TODO: validate request for required fields
 
         Ballot ballot = null;
         try {
@@ -78,5 +79,39 @@ public class BallotController {
         }
 
         return new VoteResponse(Status.SUCCESS, "Voting successful", trx);
+    }
+
+    @MessageMapping("/contracts/ballot/open-vote")
+    @SendTo("/topic/voting-status")
+    public OpenVoteResponse openVote(OpenVoteRequest openVoteRequest) {
+        logger.info("Received open vote request");
+
+        String trx = null;
+        try {
+            trx = this.ballotContractAccessor.openVoting(openVoteRequest.getContractAddress());
+        } catch (Exception e) {
+            logger.severe("Failed to open voting: " + e.getMessage());
+
+            return new OpenVoteResponse(Status.ERROR, "Opening vote failed: " + e.getMessage(), null);
+        }
+
+        return new OpenVoteResponse(Status.SUCCESS, "Opening vote was successful", trx);
+    }
+
+    @MessageMapping("/contracts/ballot/close-vote")
+    @SendTo("/topic/voting-status")
+    public CloseVoteResponse closeVote(CloseVoteRequest closeVoteRequest) {
+        logger.info("Received close vote request");
+
+        String trx = null;
+        try {
+            trx = this.ballotContractAccessor.closeVoting(closeVoteRequest.getContractAddress());
+        } catch (Exception e) {
+            logger.severe("Failed to close voting: " + e.getMessage());
+
+            return new CloseVoteResponse(Status.ERROR, "Closing vote failed: " + e.getMessage(), null);
+        }
+
+        return new CloseVoteResponse(Status.SUCCESS, "Closing vote was successful", trx);
     }
 }
