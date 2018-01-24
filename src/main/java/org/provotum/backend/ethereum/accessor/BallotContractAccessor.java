@@ -9,6 +9,7 @@ import org.provotum.backend.socket.message.event.VoteEventResponse;
 import org.provotum.backend.socket.publisher.TopicPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.tuples.generated.Tuple2;
@@ -126,11 +127,11 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
      * @return The transaction hash.
      * @throws Exception If voting failed.
      */
-    public String vote(String contractAddress, String vote) throws Exception {
+    public String vote(String contractAddress, BigInteger vote, Credentials credentials) throws Exception {
         Ballot ballot = Ballot.load(
             contractAddress,
             this.web3j,
-            this.ethereumConfiguration.getWalletCredentials(),
+            credentials,
             Ballot.GAS_PRICE,
             Ballot.GAS_LIMIT
         );
@@ -147,7 +148,7 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
      * @return A map having the sender's address with her corresponding vote.
      * @throws Exception If fetching the voting result failed.
      */
-    public Map<String, String> getResults(String contractAddress) throws Exception {
+    public Map<String, BigInteger> getResults(String contractAddress) throws Exception {
         Ballot ballot = Ballot.load(
             contractAddress,
             this.web3j,
@@ -159,9 +160,9 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
         BigInteger totalVotes = ballot.getTotalVotes().send();
         logger.info("Fetched a total of " + totalVotes + " votes from the Ballot contract at " + contractAddress);
 
-        Map<String, String> votes = new HashMap<>();
+        Map<String, BigInteger> votes = new HashMap<>();
         for (BigInteger i = BigInteger.ZERO; i.compareTo(totalVotes) < 0; i = i.add(BigInteger.ONE)) {
-            Tuple2<String, String> tuple = ballot.getVote(i).send();
+            Tuple2<String, BigInteger> tuple = ballot.getVote(i).send();
 
             votes.put(tuple.getValue1(), tuple.getValue2());
         }
