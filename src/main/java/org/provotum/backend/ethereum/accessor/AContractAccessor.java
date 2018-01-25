@@ -11,7 +11,7 @@ public abstract class AContractAccessor<T extends Contract, C> {
      * @return The deployed contract.
      * @throws Exception If deploying the contract failed.
      */
-    public abstract T deploy(C configuration) throws Exception;
+    public abstract void deploy(C configuration) throws Exception;
 
     /**
      * Load the contract at the specified address.
@@ -28,5 +28,5 @@ public abstract class AContractAccessor<T extends Contract, C> {
      * @return The transaction hash.
      * @throws Exception If removing the contract failed.
      */
-    public abstract String remove(String contractAddress) throws Exception;
+    public abstract void remove(String contractAddress) throws Exception;
 }
