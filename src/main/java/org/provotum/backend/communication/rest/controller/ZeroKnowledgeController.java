@@ -22,7 +22,7 @@ public class ZeroKnowledgeController {
         this.zeroKnowledgeContractAccessor = zeroKnowledgeContractAccessor;
     }
 
-    @RequestMapping(CONTEXT + "/deploy")
+    @RequestMapping(value = CONTEXT + "/deploy", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void deployZeroKnowledge(@RequestBody ZeroKnowledgeDeploymentRequest request) {
         logger.info("Received zero-knowledge deployment request");
@@ -32,7 +32,7 @@ public class ZeroKnowledgeController {
         this.zeroKnowledgeContractAccessor.deploy(new ZeroKnowledgeContractConfig());
     }
 
-    @RequestMapping(CONTEXT + "/{contractAddress}/remove")
+    @RequestMapping(value = CONTEXT + "/{contractAddress}/remove", method = RequestMethod.DELETE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void removeZeroKnowledge(@PathVariable String contractAddress) {
         logger.info("Received zero-knowledge contract removal request");

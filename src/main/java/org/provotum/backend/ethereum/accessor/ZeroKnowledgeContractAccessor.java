@@ -1,9 +1,9 @@
 package org.provotum.backend.ethereum.accessor;
 
 import org.provotum.backend.communication.message.base.Status;
+import org.provotum.backend.communication.message.partial.Contract;
 import org.provotum.backend.communication.socket.message.deployment.ZeroKnowledgeDeploymentResponse;
 import org.provotum.backend.communication.socket.message.event.ProofEventResponse;
-import org.provotum.backend.communication.message.partial.Contract;
 import org.provotum.backend.communication.socket.message.removal.ZeroKnowledgeRemovalResponse;
 import org.provotum.backend.communication.socket.publisher.TopicPublisher;
 import org.provotum.backend.config.EthereumConfiguration;
@@ -153,12 +153,12 @@ public class ZeroKnowledgeContractAccessor extends AContractAccessor<ZeroKnowled
 
                 @Override
                 public void onNext(ZeroKnowledgeVerificator.ProofEventEventResponse changeEventEventResponse) {
-                    logger.info("Sending proof event response to topic '/topic/zero-knowledge/proof-event");
+                    logger.info("Sending proof event response to topic " + TopicPublisher.EVENT_TOPIC);
 
                     Status status = changeEventEventResponse.wasSuccessful ? Status.SUCCESS : Status.ERROR;
 
                     topicPublisher.send(
-                        "/topic/zero-knowledge/proof-event",
+                        TopicPublisher.EVENT_TOPIC,
                         new ProofEventResponse(status, changeEventEventResponse.reason, changeEventEventResponse._from)
                     );
                 }

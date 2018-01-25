@@ -5,18 +5,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class PublicKey {
 
     private Integer p;
-    private Integer q;
+    private Integer g;
 
-    public PublicKey(@JsonProperty("p") Integer p, @JsonProperty("q") Integer q) {
+    public PublicKey(@JsonProperty("p") Integer p, @JsonProperty("g") Integer g) {
         this.p = p;
-        this.q = q;
+        this.g = g;
     }
 
     public Integer getP() {
         return p;
     }
 
-    public Integer getQ() {
-        return q;
+    public Integer getG() {
+        return g;
     }
 }

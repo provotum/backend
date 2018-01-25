@@ -27,7 +27,7 @@ public class BallotController {
         this.ethereumConfiguration = ethereumConfiguration;
     }
 
-    @RequestMapping(CONTEXT + "/deploy")
+    @RequestMapping(value = CONTEXT + "/deploy", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void deployBallot(@RequestBody BallotDeploymentRequest request) {
         logger.info("Received ballot deployment request");
@@ -41,7 +41,7 @@ public class BallotController {
         );
     }
 
-    @RequestMapping(CONTEXT + "/{contractAddress}/vote")
+    @RequestMapping(value = CONTEXT + "/{contractAddress}/vote", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void vote(@PathVariable String contractAddress, @RequestBody VoteRequest voteRequest) {
         logger.info("Received vote request");
@@ -59,7 +59,7 @@ public class BallotController {
         );
     }
 
-    @RequestMapping(CONTEXT + "/{contractAddress}/open-vote")
+    @RequestMapping(value = CONTEXT + "/{contractAddress}/open-vote", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void openVote(@PathVariable String contractAddress) {
         logger.info("Received open vote request");
@@ -67,7 +67,7 @@ public class BallotController {
         this.ballotContractAccessor.openVoting(contractAddress);
     }
 
-    @RequestMapping(CONTEXT + "/{contractAddress}/close-vote")
+    @RequestMapping(value = CONTEXT + "/{contractAddress}/close-vote", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void closeVote(@PathVariable String contractAddress) {
         logger.info("Received close vote request");
@@ -75,7 +75,7 @@ public class BallotController {
         this.ballotContractAccessor.closeVoting(contractAddress);
     }
 
-    @RequestMapping(CONTEXT + "/{contractAddress}/remove")
+    @RequestMapping(value = CONTEXT + "/{contractAddress}/remove", method = RequestMethod.DELETE)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void removeBallot(@PathVariable String contractAddress) {
         logger.info("Received remove ballot contract request");
@@ -83,7 +83,7 @@ public class BallotController {
         this.ballotContractAccessor.remove(contractAddress);
     }
 
-    @RequestMapping(CONTEXT + "/{contractAddress}/question")
+    @RequestMapping(value = CONTEXT + "/{contractAddress}/question", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void requestVotingQuestion(@PathVariable String contractAddress) {
         logger.info("Received ballot contract voting question request");
@@ -91,7 +91,7 @@ public class BallotController {
         this.ballotContractAccessor.getQuestion(contractAddress);
     }
 
-    @RequestMapping(CONTEXT + "/{contractAddress}/results")
+    @RequestMapping(value = CONTEXT + "/{contractAddress}/results", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void requestVotingResults(@PathVariable String contractAddress) {
         logger.info("Received ballot contract voting result request");

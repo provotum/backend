@@ -8,8 +8,8 @@ import org.provotum.backend.communication.socket.message.meta.GetQuestionRespons
 import org.provotum.backend.communication.socket.message.meta.GetResultResponse;
 import org.provotum.backend.communication.message.partial.Contract;
 import org.provotum.backend.communication.socket.message.removal.BallotRemovalResponse;
-import org.provotum.backend.communication.socket.message.event.CloseVoteEventResponse;
-import org.provotum.backend.communication.socket.message.event.OpenVoteEventResponse;
+import org.provotum.backend.communication.socket.message.state.CloseVoteEventResponse;
+import org.provotum.backend.communication.socket.message.state.OpenVoteEventResponse;
 import org.provotum.backend.communication.socket.publisher.TopicPublisher;
 import org.provotum.backend.config.EthereumConfiguration;
 import org.provotum.backend.ethereum.config.BallotContractConfig;
@@ -298,9 +298,9 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
 
                 Map<String, BigInteger> votes = new HashMap<>();
                 for (BigInteger i = BigInteger.ZERO; i.compareTo(totalVotes) < 0; i = i.add(BigInteger.ONE)) {
-                    logger.fine("Fetching vote at index " + i);
+                    logger.info("Fetching vote at index " + i);
                     Tuple2<String, BigInteger> tuple = ballot.getVote(i).send();
-                    logger.fine("Vote at index " + i + " fetched");
+                    logger.info("Vote at index " + i + " fetched");
 
                     votes.put(tuple.getValue1(), tuple.getValue2());
                 }
@@ -378,12 +378,12 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
 
                 @Override
                 public void onNext(Ballot.VoteEventEventResponse voteEventEventResponse) {
-                    logger.info("Sending vote event response to topic '/topic/ballot/vote-event");
+                    logger.info("Sending vote event response to topic " + TopicPublisher.EVENT_TOPIC);
 
                     Status status = voteEventEventResponse.wasSuccessful ? Status.SUCCESS : Status.ERROR;
 
                     topicPublisher.send(
-                        "/topic/ballot/vote-event",
+                        TopicPublisher.EVENT_TOPIC,
                         new VoteEventResponse(status, voteEventEventResponse.reason, voteEventEventResponse._from)
                     );
                 }
@@ -407,12 +407,12 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
 
                 @Override
                 public void onNext(Ballot.ChangeEventEventResponse changeEventEventResponse) {
-                    logger.info("Sending change event response to topic '/topic/ballot/change-event");
+                    logger.info("Sending change event response to topic " + TopicPublisher.EVENT_TOPIC);
 
                     Status status = changeEventEventResponse.wasSuccessful ? Status.SUCCESS : Status.ERROR;
 
                     topicPublisher.send(
-                        "/topic/ballot/change-event",
+                        TopicPublisher.EVENT_TOPIC,
                         new ChangeEventResponse(status, changeEventEventResponse.reason, changeEventEventResponse._from)
                     );
                 }
