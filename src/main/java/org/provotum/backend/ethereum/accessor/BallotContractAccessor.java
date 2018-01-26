@@ -1,20 +1,20 @@
 package org.provotum.backend.ethereum.accessor;
 
 import org.provotum.backend.communication.message.base.Status;
+import org.provotum.backend.communication.message.partial.Contract;
 import org.provotum.backend.communication.socket.message.deployment.BallotDeploymentResponse;
 import org.provotum.backend.communication.socket.message.event.ChangeEventResponse;
 import org.provotum.backend.communication.socket.message.event.VoteEventResponse;
 import org.provotum.backend.communication.socket.message.meta.GetQuestionResponse;
 import org.provotum.backend.communication.socket.message.meta.GetResultResponse;
-import org.provotum.backend.communication.message.partial.Contract;
 import org.provotum.backend.communication.socket.message.removal.BallotRemovalResponse;
 import org.provotum.backend.communication.socket.message.state.CloseVoteEventResponse;
 import org.provotum.backend.communication.socket.message.state.OpenVoteEventResponse;
+import org.provotum.backend.communication.socket.message.vote.VoteResponse;
 import org.provotum.backend.communication.socket.publisher.TopicPublisher;
 import org.provotum.backend.config.EthereumConfiguration;
 import org.provotum.backend.ethereum.config.BallotContractConfig;
 import org.provotum.backend.ethereum.wrappers.Ballot;
-import org.provotum.backend.communication.socket.message.vote.VoteResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.web3j.crypto.Credentials;
@@ -180,9 +180,9 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 response = new OpenVoteEventResponse(Status.ERROR, "Opening vote failed: " + e.getMessage(), null);
             }
 
-            logger.info("Sending open vote response to subscribers at topic " + TopicPublisher.EVENT_TOPIC);
+            logger.info("Sending open vote response to subscribers at topic " + TopicPublisher.STATE_TOPIC);
             this.topicPublisher.send(
-                TopicPublisher.EVENT_TOPIC,
+                TopicPublisher.STATE_TOPIC,
                 response
             );
         });
@@ -220,9 +220,9 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 response = new CloseVoteEventResponse(Status.ERROR, "Closing vote failed: " + e.getMessage(), null);
             }
 
-            logger.info("Sending close vote response to subscribers at topic " + TopicPublisher.EVENT_TOPIC);
+            logger.info("Sending close vote response to subscribers at topic " + TopicPublisher.STATE_TOPIC);
             this.topicPublisher.send(
-                TopicPublisher.EVENT_TOPIC,
+                TopicPublisher.STATE_TOPIC,
                 response
             );
         });

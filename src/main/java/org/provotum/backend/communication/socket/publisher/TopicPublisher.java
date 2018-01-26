@@ -15,6 +15,7 @@ public class TopicPublisher {
     public static final String EVENT_TOPIC = "/topic/events";
     public static final String VOTE_TOPIC = "/topic/votes";
     public static final String META_TOPIC = "/topic/meta";
+    public static final String STATE_TOPIC = "/topic/state";
 
     private static final Logger logger = Logger.getLogger(TopicPublisher.class.getName());
     private final SimpMessagingTemplate messageTemplate;
