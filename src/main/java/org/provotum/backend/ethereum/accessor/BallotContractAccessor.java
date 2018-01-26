@@ -155,9 +155,9 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 response = new OpenVoteEventResponse(Status.ERROR, "Opening vote failed: " + "Test failure", null);
             }
 
-            logger.info("Sending open vote response to subscribers at topic " + TopicPublisher.EVENT_TOPIC);
+            logger.info("Sending open vote response to subscribers at topic " + TopicPublisher.STATE_TOPIC);
             this.topicPublisher.send(
-                TopicPublisher.EVENT_TOPIC,
+                TopicPublisher.STATE_TOPIC,
                 response
             );
         });
@@ -188,9 +188,9 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 response = new CloseVoteEventResponse(Status.ERROR, "Closing vote failed: " + "Test failure", null);
             }
 
-            logger.info("Sending close vote response to subscribers at topic " + TopicPublisher.EVENT_TOPIC);
+            logger.info("Sending close vote response to subscribers at topic " + TopicPublisher.STATE_TOPIC);
             this.topicPublisher.send(
-                TopicPublisher.EVENT_TOPIC,
+                TopicPublisher.STATE_TOPIC,
                 response
             );
         });
