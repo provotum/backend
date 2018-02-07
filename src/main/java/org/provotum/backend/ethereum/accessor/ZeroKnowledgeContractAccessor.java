@@ -7,6 +7,7 @@ import org.provotum.backend.communication.socket.message.event.ProofEventRespons
 import org.provotum.backend.communication.socket.message.removal.ZeroKnowledgeRemovalResponse;
 import org.provotum.backend.communication.socket.publisher.TopicPublisher;
 import org.provotum.backend.config.EthereumConfiguration;
+import org.provotum.backend.ethereum.base.TransactionReceiptStatus;
 import org.provotum.backend.ethereum.config.ZeroKnowledgeContractConfig;
 import org.provotum.backend.ethereum.wrappers.Ballot;
 import org.provotum.backend.ethereum.wrappers.ZeroKnowledgeVerificator;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import rx.Observer;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
@@ -110,16 +112,22 @@ public class ZeroKnowledgeContractAccessor extends AContractAccessor<ZeroKnowled
             ZeroKnowledgeRemovalResponse response;
 
             try {
-                String trx = ZeroKnowledgeVerificator.load(
+                TransactionReceipt receipt = ZeroKnowledgeVerificator.load(
                     contractAddress,
                     this.web3j,
                     this.ethereumConfiguration.getWalletCredentials(),
                     ZeroKnowledgeVerificator.GAS_PRICE,
                     ZeroKnowledgeVerificator.GAS_LIMIT
-                ).destroy().send().getTransactionHash();
+                ).destroy().send();
 
-                logger.info("Zero-knowledge contract removed. Transaction hash is: " + trx);
-                response = new ZeroKnowledgeRemovalResponse(Status.SUCCESS, "Successfully removed zero-knowledge contract.", trx);
+                // this field is only available from the Byzantium blocks on
+                if (null != receipt.getStatus() && ! TransactionReceiptStatus.SUCCESS.getValue().equals(receipt.getStatus())) {
+                    logger.info("Failed to remove zero-knowledge contract due to failed transaction. Transaction hash is " + receipt.getTransactionHash() + ". Logs are " + receipt.getLogsBloom());
+                    response = new ZeroKnowledgeRemovalResponse(Status.ERROR, "Failed to submit vote due to failed transaction.", receipt.getTransactionHash());
+                } else {
+                    logger.info("Zero-knowledge contract removed. Transaction hash is: " + receipt.getTransactionHash());
+                    response = new ZeroKnowledgeRemovalResponse(Status.SUCCESS, "Successfully removed zero-knowledge contract.", receipt.getTransactionHash());
+                }
             } catch (Exception e) {
                 logger.severe("Failed to remove zero-knowledge contract: " + e.getMessage());
                 e.printStackTrace();

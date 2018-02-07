@@ -13,6 +13,7 @@ import org.provotum.backend.communication.socket.message.state.OpenVoteEventResp
 import org.provotum.backend.communication.socket.message.vote.VoteResponse;
 import org.provotum.backend.communication.socket.publisher.TopicPublisher;
 import org.provotum.backend.config.EthereumConfiguration;
+import org.provotum.backend.ethereum.base.TransactionReceiptStatus;
 import org.provotum.backend.ethereum.config.BallotContractConfig;
 import org.provotum.backend.ethereum.wrappers.Ballot;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Component;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
+import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tuples.generated.Tuple2;
 import rx.Observer;
 import rx.Scheduler;
@@ -123,16 +125,22 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
             BallotRemovalResponse response;
 
             try {
-                String trx = Ballot.load(
+                TransactionReceipt receipt = Ballot.load(
                     contractAddress,
                     this.web3j,
                     this.ethereumConfiguration.getWalletCredentials(),
                     Ballot.GAS_PRICE,
                     Ballot.GAS_LIMIT
-                ).destroy().send().getTransactionHash();
+                ).destroy().send();
 
-                logger.info("Ballot contract removed. Transaction hash is: " + trx);
-                response = new BallotRemovalResponse(Status.SUCCESS, "Successfully removed ballot.", trx);
+                // this field is only available from the Byzantium blocks on
+                if (null != receipt.getStatus() && ! TransactionReceiptStatus.SUCCESS.getValue().equals(receipt.getStatus())) {
+                    logger.info("Failed to remove ballot due to failed transaction " + receipt.getTransactionHash() + ". Logs are " + receipt.getLogsBloom());
+                    response = new BallotRemovalResponse(Status.ERROR, "Failed to remove ballot due to failed transaction.", receipt.getTransactionHash());
+                } else {
+                    logger.info("Ballot contract removed. Transaction hash is: " + receipt.getTransactionHash());
+                    response = new BallotRemovalResponse(Status.SUCCESS, "Successfully removed ballot.", receipt.getTransactionHash());
+                }
             } catch (Exception e) {
                 logger.severe("Failed to remove ballot contract: " + e.getMessage());
                 e.printStackTrace();
@@ -162,17 +170,22 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
             OpenVoteEventResponse response;
 
             try {
-                String trx = Ballot.load(
+                TransactionReceipt receipt = Ballot.load(
                     contractAddress,
                     this.web3j,
                     this.ethereumConfiguration.getWalletCredentials(),
                     Ballot.GAS_PRICE,
                     Ballot.GAS_LIMIT
-                ).openVoting().send().getTransactionHash();
+                ).openVoting().send();
 
-                logger.info("Vote opened. Transaction hash is " + trx);
-
-                response = new OpenVoteEventResponse(Status.SUCCESS, "Opening vote was successful.", trx);
+                // this field is only available from the Byzantium blocks on
+                if (null != receipt.getStatus() && ! TransactionReceiptStatus.SUCCESS.getValue().equals(receipt.getStatus())) {
+                    logger.info("Failed to open vote due to failed transaction. Transaction hash is " + receipt.getTransactionHash() + ". Logs are " + receipt.getLogsBloom());
+                    response = new OpenVoteEventResponse(Status.ERROR, "Failed to open vote due to failed transaction.", receipt.getTransactionHash());
+                } else {
+                    logger.info("Vote opened. Transaction hash is " + receipt.getTransactionHash());
+                    response = new OpenVoteEventResponse(Status.SUCCESS, "Opening vote was successful.", receipt.getTransactionHash());
+                }
             } catch (Exception e) {
                 logger.severe("Failed to open vote on ballot contract at " + contractAddress);
                 e.printStackTrace();
@@ -202,17 +215,22 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
             CloseVoteEventResponse response;
 
             try {
-                String trx = Ballot.load(
+                TransactionReceipt receipt = Ballot.load(
                     contractAddress,
                     this.web3j,
                     this.ethereumConfiguration.getWalletCredentials(),
                     Ballot.GAS_PRICE,
                     Ballot.GAS_LIMIT
-                ).closeVoting().send().getTransactionHash();
+                ).closeVoting().send();
 
-                logger.info("Vote closed. Transaction hash is " + trx);
-
-                response = new CloseVoteEventResponse(Status.SUCCESS, "Closing vote was successful.", trx);
+                // this field is only available from the Byzantium blocks on
+                if (null != receipt.getStatus() && ! TransactionReceiptStatus.SUCCESS.getValue().equals(receipt.getStatus())) {
+                    logger.info("Failed to close vote due to failed transaction. Transaction hash is " + receipt.getTransactionHash() + ". Logs are " + receipt.getLogsBloom());
+                    response = new CloseVoteEventResponse(Status.ERROR, "Failed to close vote due to failed transaction.", receipt.getTransactionHash());
+                } else {
+                    logger.info("Vote closed. Transaction hash is " + receipt.getTransactionHash());
+                    response = new CloseVoteEventResponse(Status.SUCCESS, "Closing vote was successful.", receipt.getTransactionHash());
+                }
             } catch (Exception e) {
                 logger.severe("Failed to close vote on ballot contract at " + contractAddress);
                 e.printStackTrace();
@@ -244,17 +262,22 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
 
             try {
                 // TODO: we might need to subscribe again to vote events in the case when the ballot contract is not deployed but only referenced.
-                String trx = Ballot.load(
+                TransactionReceipt receipt = Ballot.load(
                     contractAddress,
                     this.web3j,
                     credentials,
                     Ballot.GAS_PRICE,
                     Ballot.GAS_LIMIT
-                ).vote(vote).send().getTransactionHash();
+                ).vote(vote).send();
 
-                logger.info("Submitted vote. Transaction hash is " + trx);
-
-                response = new VoteResponse(Status.SUCCESS, "Successfully submitted vote.", trx);
+                // this field is only available from the Byzantium blocks on
+                if (null != receipt.getStatus() && ! TransactionReceiptStatus.SUCCESS.getValue().equals(receipt.getStatus())) {
+                    logger.info("Failed to submit vote due to failed transaction. Transaction hash is " + receipt.getTransactionHash() + ". Logs are " + receipt.getLogsBloom());
+                    response = new VoteResponse(Status.ERROR, "Failed to submit vote due to failed transaction.", receipt.getTransactionHash());
+                } else {
+                    logger.info("Submitted vote. Transaction hash is " + receipt.getTransactionHash());
+                    response = new VoteResponse(Status.SUCCESS, "Successfully submitted vote.", receipt.getTransactionHash());
+                }
             } catch (Exception e) {
                 logger.severe("Failed to submit vote on ballot contract at " + contractAddress);
                 e.printStackTrace();
