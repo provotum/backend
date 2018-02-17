@@ -2,13 +2,11 @@ package org.provotum.backend.communication.rest.controller;
 
 import org.provotum.backend.communication.rest.message.deployment.BallotDeploymentRequest;
 import org.provotum.backend.communication.rest.message.vote.VoteRequest;
-import org.provotum.backend.config.EthereumConfiguration;
 import org.provotum.backend.ethereum.accessor.BallotContractAccessor;
 import org.provotum.backend.ethereum.config.BallotContractConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.web3j.crypto.Credentials;
 
 import java.util.logging.Logger;
 
@@ -19,12 +17,10 @@ public class BallotController {
     private static final String CONTEXT = "/ballot";
 
     private BallotContractAccessor ballotContractAccessor;
-    private EthereumConfiguration ethereumConfiguration;
 
     @Autowired
-    public BallotController(BallotContractAccessor ballotContractAccessor, EthereumConfiguration ethereumConfiguration) {
+    public BallotController(BallotContractAccessor ballotContractAccessor) {
         this.ballotContractAccessor = ballotContractAccessor;
-        this.ethereumConfiguration = ethereumConfiguration;
     }
 
     @RequestMapping(value = CONTEXT + "/deploy", method = RequestMethod.POST)
@@ -42,21 +38,9 @@ public class BallotController {
     }
 
     @RequestMapping(value = CONTEXT + "/{contractAddress}/vote", method = RequestMethod.POST)
-    @ResponseStatus(HttpStatus.ACCEPTED)
+    @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
     public void vote(@PathVariable String contractAddress, @RequestBody VoteRequest voteRequest) {
-        logger.info("Received vote request");
-
-//        Credentials credentials = Credentials.create(privateKey, publicKey);
-        Credentials credentials = this.ethereumConfiguration.getVoterCredentials();
-
-        // TODO: remove this log statement!
-        logger.info("PublicKey: " + credentials.getEcKeyPair().getPublicKey() + ", PrivateKey: " + credentials.getEcKeyPair().getPrivateKey());
-
-        this.ballotContractAccessor.vote(
-            contractAddress,
-            voteRequest.getVote(),
-            credentials
-        );
+        logger.severe("Vote endpoint is deprecated. Not submitting vote to Ethereum.");
     }
 
     @RequestMapping(value = CONTEXT + "/{contractAddress}/open-vote", method = RequestMethod.POST)
