@@ -16,13 +16,16 @@ import org.provotum.backend.config.EthereumConfiguration;
 import org.provotum.backend.ethereum.base.TransactionReceiptStatus;
 import org.provotum.backend.ethereum.config.BallotContractConfig;
 import org.provotum.backend.ethereum.wrappers.Ballot;
+import org.provotum.backend.security.CipherTextWrapper;
+import org.provotum.backend.security.EncryptionManager;
+import org.provotum.security.arithmetic.ModInteger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.web3j.crypto.Credentials;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
-import org.web3j.tuples.generated.Tuple2;
+import org.web3j.tuples.generated.Tuple3;
 import rx.Observer;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
@@ -42,15 +45,17 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
     private Web3j web3j;
     private TopicPublisher topicPublisher;
     private EthereumConfiguration ethereumConfiguration;
+    private EncryptionManager encryptionManager;
 
     private Scheduler subscriptionScheduler;
     private ExecutorService executorService;
 
     @Autowired
-    public BallotContractAccessor(Web3j web3j, EthereumConfiguration ethereumConfiguration, TopicPublisher topicPublisher) {
+    public BallotContractAccessor(Web3j web3j, EthereumConfiguration ethereumConfiguration, TopicPublisher topicPublisher, EncryptionManager encryptionManager) {
         this.web3j = web3j;
         this.ethereumConfiguration = ethereumConfiguration;
         this.topicPublisher = topicPublisher;
+        this.encryptionManager = encryptionManager;
 
         ExecutorService executor = Executors.newCachedThreadPool();
         this.subscriptionScheduler = Schedulers.from(executor);
@@ -252,44 +257,61 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
      * @param contractAddress The address of the ballot.
      * @param vote            The vote.
      */
-    public void vote(String contractAddress, BigInteger vote, Credentials credentials) {
+    public void vote(String contractAddress, int vote, Credentials credentials) {
         logger.info("Starting submitting vote in new thread.");
 
         // starting execution in a new thread to avoid blocking.
         this.executorService.submit(() -> {
-            logger.info("Submitting vote in new thread started.");
-            VoteResponse response;
-
             try {
-                // TODO: we might need to subscribe again to vote events in the case when the ballot contract is not deployed but only referenced.
-                TransactionReceipt receipt = Ballot.load(
-                    contractAddress,
-                    this.web3j,
-                    credentials,
-                    Ballot.GAS_PRICE,
-                    Ballot.GAS_LIMIT
-                ).vote(vote).send();
+                logger.info("Submitting vote in new thread started.");
+                VoteResponse response;
 
-                // this field is only available from the Byzantium blocks on
-                if (null != receipt.getStatus() && ! TransactionReceiptStatus.SUCCESS.getValue().equals(receipt.getStatus())) {
-                    logger.info("Failed to submit vote due to failed transaction. Transaction hash is " + receipt.getTransactionHash() + ". Logs are " + receipt.getLogsBloom());
-                    response = new VoteResponse(Status.ERROR, "Failed to submit vote due to failed transaction.", receipt.getTransactionHash());
-                } else {
-                    logger.info("Submitted vote. Transaction hash is " + receipt.getTransactionHash());
-                    response = new VoteResponse(Status.SUCCESS, "Successfully submitted vote.", receipt.getTransactionHash());
+                logger.info("Starting to encrypt vote and generating the corresponding proof.");
+                CipherTextWrapper cipherTextWrapper = this.encryptionManager.encryptVoteAndGenerateProof(vote);
+                logger.info("Ciphertext and proof generated.");
+
+                logger.info("Submitting ciphertext to Ethereum.");
+                try {
+                    // TODO: we might need to subscribe again to vote events in the case when the ballot contract is not deployed but only referenced.
+                    TransactionReceipt receipt = Ballot.load(
+                        contractAddress,
+                        this.web3j,
+                        credentials,
+                        Ballot.GAS_PRICE,
+                        Ballot.GAS_LIMIT
+                    ).vote(cipherTextWrapper.getCiphertext(), cipherTextWrapper.getProof()).send();
+
+                    // this field is only available from the Byzantium blocks on
+                    if (null != receipt.getStatus() && ! TransactionReceiptStatus.SUCCESS.getValue().equals(receipt.getStatus())) {
+                        logger.info("Failed to submit vote due to failed transaction. Transaction hash is " + receipt.getTransactionHash() + ". Logs are " + receipt.getLogsBloom());
+                        response = new VoteResponse(Status.ERROR, "Failed to submit vote due to failed transaction.", receipt.getTransactionHash());
+                    } else {
+                        logger.info("Submitted vote. Transaction hash is " + receipt.getTransactionHash());
+                        response = new VoteResponse(Status.SUCCESS, "Successfully submitted vote.", receipt.getTransactionHash());
+                    }
+                } catch (Exception e) {
+                    logger.severe("Failed to submit vote on ballot contract at " + contractAddress);
+                    e.printStackTrace();
+
+                    response = new VoteResponse(Status.ERROR, "Submitting vote failed: " + e.getMessage(), null);
                 }
+
+                logger.info("Sending vote response to subscribers at topic " + TopicPublisher.EVENT_TOPIC);
+                this.topicPublisher.send(
+                    TopicPublisher.VOTE_TOPIC,
+                    response
+                );
             } catch (Exception e) {
                 logger.severe("Failed to submit vote on ballot contract at " + contractAddress);
                 e.printStackTrace();
 
-                response = new VoteResponse(Status.ERROR, "Submitting vote failed: " + e.getMessage(), null);
+                VoteResponse response = new VoteResponse(Status.ERROR, "Submitting vote failed: " + e.getMessage(), null);
+                logger.info("Sending vote response to subscribers at topic " + TopicPublisher.EVENT_TOPIC);
+                this.topicPublisher.send(
+                    TopicPublisher.VOTE_TOPIC,
+                    response
+                );
             }
-
-            logger.info("Sending vote response to subscribers at topic " + TopicPublisher.EVENT_TOPIC);
-            this.topicPublisher.send(
-                TopicPublisher.VOTE_TOPIC,
-                response
-            );
         });
     }
 
@@ -322,10 +344,17 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 Map<String, BigInteger> votes = new HashMap<>();
                 for (BigInteger i = BigInteger.ZERO; i.compareTo(totalVotes) < 0; i = i.add(BigInteger.ONE)) {
                     logger.info("Fetching vote at index " + i);
-                    Tuple2<String, BigInteger> tuple = ballot.getVote(i).send();
+                    Tuple3<String, String, String> tuple = ballot.getVote(i).send();
                     logger.info("Vote at index " + i + " fetched");
 
-                    votes.put(tuple.getValue1(), tuple.getValue2());
+                    CipherTextWrapper wrapper = new CipherTextWrapper(
+                        tuple.getValue2(),
+                        tuple.getValue3()
+                    );
+
+                    // TODO: vote should not be decrypted here!
+                    ModInteger vote = this.encryptionManager.decrypt(wrapper);
+                    votes.put(tuple.getValue1(), vote.asBigInteger());
                 }
 
                 response = new GetResultResponse(Status.SUCCESS, "Successfully fetched votes.", votes);
