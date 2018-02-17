@@ -6,12 +6,13 @@ import org.provotum.backend.communication.message.partial.Credentials;
 
 import java.math.BigInteger;
 
+@Deprecated
 public class VoteRequest extends ARequest {
 
     private Credentials credentials;
-    private BigInteger vote;
+    private int vote;
 
-    public VoteRequest(@JsonProperty("credentials") Credentials credentials, @JsonProperty("vote") BigInteger vote) {
+    public VoteRequest(@JsonProperty("credentials") Credentials credentials, @JsonProperty("vote") int vote) {
         this.credentials = credentials;
         this.vote = vote;
     }
@@ -20,7 +21,7 @@ public class VoteRequest extends ARequest {
         return credentials;
     }
 
-    public BigInteger getVote() {
+    public int getVote() {
         return vote;
     }
 }
