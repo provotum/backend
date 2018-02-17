@@ -13,10 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
-import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyPair;
-import java.security.KeyPairGeneratorSpi;
-import java.security.SecureRandom;
+import java.security.*;
 import java.util.logging.Logger;
 
 @Configuration
@@ -28,12 +25,14 @@ public class SecurityConfiguration {
     private PublicKey publicKey;
     private PrivateKey privateKey;
 
+    private KeyPair rsaKeyPair;
+
     @Bean
     public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
         return new PropertySourcesPlaceholderConfigurer();
     }
 
-    public SecurityConfiguration() throws InvalidAlgorithmParameterException {
+    public SecurityConfiguration() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException {
         logger.info("Generating voting election keypair.");
         ElGamalParametersGenerator generator = new ElGamalParametersGenerator();
         generator.init(160, 20, new SecureRandom());
@@ -53,6 +52,10 @@ public class SecurityConfiguration {
 
         this.publicKey = new PublicKey(pubKey);
         this.privateKey = new PrivateKey(privKey);
+
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+        keyGen.initialize(1024);
+        this.rsaKeyPair = keyGen.generateKeyPair();
     }
 
     public PublicKey getPublicKey() {
@@ -61,5 +64,9 @@ public class SecurityConfiguration {
 
     public PrivateKey getPrivateKey() {
         return this.privateKey;
+    }
+
+    public KeyPair getRsaKeyPair() {
+        return rsaKeyPair;
     }
 }

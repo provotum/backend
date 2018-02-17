@@ -13,6 +13,14 @@ import org.provotum.security.serializer.CipherTextSerializer;
 import org.provotum.security.serializer.MembershipProofSerializer;
 import org.springframework.stereotype.Component;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.math.BigInteger;
+import java.security.InvalidKeyException;
+import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -24,11 +32,13 @@ public class EncryptionManager {
 
     private PublicKey publicKey;
     private PrivateKey privateKey;
+    private KeyPair rsaKeyPair;
     private List<ModInteger> voteDomain;
 
     public EncryptionManager(SecurityConfiguration securityConfiguration) {
         this.publicKey = securityConfiguration.getPublicKey();
         this.privateKey = securityConfiguration.getPrivateKey();
+        this.rsaKeyPair = securityConfiguration.getRsaKeyPair();
 
         // add the values which we currently accept as a valid vote
         this.voteDomain = new ArrayList<>();
@@ -43,7 +53,7 @@ public class EncryptionManager {
         return encryption.encrypt(this.publicKey, votingMessage);
     }
 
-    public CipherTextWrapper encryptVoteAndGenerateProof(int vote) {
+    public CipherTextWrapper encryptVoteAndGenerateProof(int vote) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         logger.info("Starting to encrypt vote and generate corresponding proof.");
 
         // set the vote modulus the prime number
@@ -55,6 +65,14 @@ public class EncryptionManager {
         CipherText cipherText = encryption.encrypt(this.publicKey, votingMessage);
         logger.info("Vote encrypted.");
 
+        // We also need to add the random value used to the public parameters.
+        // Since this value must be private under any circumstances, we need to encrypt that...
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+
+        // encrypt the plaintext using the public key
+        cipher.init(Cipher.ENCRYPT_MODE, this.rsaKeyPair.getPublic());
+        byte[] randomValueCipherText = cipher.doFinal(cipherText.getR().finalized().toByteArray());
+
         logger.info("Generating proof.");
         MembershipProof proof = MembershipProof.commit(this.publicKey, votingMessage, cipherText, this.voteDomain);
         logger.info("Proof generated.");
@@ -65,8 +83,21 @@ public class EncryptionManager {
 
         return new CipherTextWrapper(
             serializedCiphertext,
-            serializedProof
+            serializedProof,
+            randomValueCipherText
         );
+    }
+
+    public CipherText deserializeCiphertext(String ciphertext, byte[] encryptedRandom) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        cipher.init(Cipher.DECRYPT_MODE, this.rsaKeyPair.getPrivate());
+        BigInteger random = new BigInteger(cipher.doFinal(encryptedRandom));
+
+        return CipherTextSerializer.fromString(ciphertext, new ModInteger(random.toString(), this.publicKey.getQ()));
+    }
+
+    public MembershipProof deserializeMembershipProof(String proof) {
+        return MembershipProofSerializer.fromString(proof);
     }
 
     public ModInteger decrypt(CipherText cipherText) {

@@ -20,7 +20,6 @@ import org.provotum.backend.security.CipherTextWrapper;
 import org.provotum.backend.security.EncryptionManager;
 import org.provotum.security.elgamal.additive.CipherText;
 import org.provotum.security.elgamal.proof.noninteractive.MembershipProof;
-import org.provotum.security.serializer.CipherTextSerializer;
 import org.provotum.security.serializer.MembershipProofSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,6 +28,7 @@ import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameterName;
 import org.web3j.protocol.core.methods.response.TransactionReceipt;
 import org.web3j.tuples.generated.Tuple3;
+import org.web3j.tuples.generated.Tuple4;
 import rx.Observer;
 import rx.Scheduler;
 import rx.schedulers.Schedulers;
@@ -281,7 +281,7 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                         credentials,
                         Ballot.GAS_PRICE,
                         Ballot.GAS_LIMIT
-                    ).vote(cipherTextWrapper.getCiphertext(), cipherTextWrapper.getProof()).send();
+                    ).vote(cipherTextWrapper.getCiphertext(), cipherTextWrapper.getProof(), cipherTextWrapper.getRandom()).send();
 
                     // this field is only available from the Byzantium blocks on
                     if (null != receipt.getStatus() && ! TransactionReceiptStatus.SUCCESS.getValue().equals(receipt.getStatus())) {
@@ -347,12 +347,12 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
 
                 for (BigInteger i = BigInteger.ZERO; i.compareTo(totalVotes) < 0; i = i.add(BigInteger.ONE)) {
                     logger.info("Fetching vote at index " + i);
-                    Tuple3<String, String, String> tuple = ballot.getVote(i).send();
+                    Tuple4<String, String, String, byte[]> tuple = ballot.getVote(i).send();
                     logger.info("Vote at index " + i + " fetched");
 
                     logger.info("[" + tuple.getValue1() + "] Deserializing vote and proof...");
-                    CipherText cipherText = CipherTextSerializer.fromString(tuple.getValue2());
-                    MembershipProof proof = MembershipProofSerializer.fromString(tuple.getValue3());
+                    CipherText cipherText = this.encryptionManager.deserializeCiphertext(tuple.getValue2(), tuple.getValue4());
+                    MembershipProof proof = this.encryptionManager.deserializeMembershipProof(tuple.getValue3());
                     logger.info("[" + tuple.getValue1() + "] Deserialized. Verifying proof...");
                     boolean isValid = this.encryptionManager.verifyProof(cipherText, proof);
 
