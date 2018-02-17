@@ -2,6 +2,7 @@ package org.provotum.backend.security;
 
 import org.provotum.backend.config.SecurityConfiguration;
 import org.provotum.security.api.IHomomorphicEncryption;
+import org.provotum.security.api.IMembershipProof;
 import org.provotum.security.arithmetic.ModInteger;
 import org.provotum.security.elgamal.PrivateKey;
 import org.provotum.security.elgamal.PublicKey;
@@ -35,6 +36,13 @@ public class EncryptionManager {
         this.voteDomain.add(ModInteger.ONE);
     }
 
+    public CipherText generateZeroVote() {
+        ModInteger votingMessage = new ModInteger(0, this.publicKey.getP());
+        IHomomorphicEncryption<CipherText> encryption = new Encryption();
+
+        return encryption.encrypt(this.publicKey, votingMessage);
+    }
+
     public CipherTextWrapper encryptVoteAndGenerateProof(int vote) {
         logger.info("Starting to encrypt vote and generate corresponding proof.");
 
@@ -61,12 +69,13 @@ public class EncryptionManager {
         );
     }
 
-    public ModInteger decrypt(CipherTextWrapper cipherTextWrapper) {
-        CipherText cipherText = CipherTextSerializer.fromString(cipherTextWrapper.getCiphertext());
-
+    public ModInteger decrypt(CipherText cipherText) {
         IHomomorphicEncryption<CipherText> encryption = new Encryption();
-        ModInteger vote = encryption.decrypt(this.privateKey, cipherText);
 
-        return vote;
+        return encryption.decrypt(this.privateKey, cipherText);
+    }
+
+    public boolean verifyProof(CipherText cipherText, IMembershipProof<CipherText> proof) {
+        return proof.verify(this.publicKey, cipherText, this.voteDomain);
     }
 }

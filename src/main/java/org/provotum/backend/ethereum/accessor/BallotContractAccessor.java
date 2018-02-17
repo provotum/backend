@@ -18,7 +18,10 @@ import org.provotum.backend.ethereum.config.BallotContractConfig;
 import org.provotum.backend.ethereum.wrappers.Ballot;
 import org.provotum.backend.security.CipherTextWrapper;
 import org.provotum.backend.security.EncryptionManager;
-import org.provotum.security.arithmetic.ModInteger;
+import org.provotum.security.elgamal.additive.CipherText;
+import org.provotum.security.elgamal.proof.noninteractive.MembershipProof;
+import org.provotum.security.serializer.CipherTextSerializer;
+import org.provotum.security.serializer.MembershipProofSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.web3j.crypto.Credentials;
@@ -31,8 +34,6 @@ import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -257,6 +258,7 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
      * @param contractAddress The address of the ballot.
      * @param vote            The vote.
      */
+    @Deprecated
     public void vote(String contractAddress, int vote, Credentials credentials) {
         logger.info("Starting submitting vote in new thread.");
 
@@ -341,28 +343,39 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 BigInteger totalVotes = ballot.getTotalVotes().send();
                 logger.info("Fetched a total of " + totalVotes + " votes from the Ballot contract at " + contractAddress);
 
-                Map<String, BigInteger> votes = new HashMap<>();
+                CipherText counter = this.encryptionManager.generateZeroVote();
+
                 for (BigInteger i = BigInteger.ZERO; i.compareTo(totalVotes) < 0; i = i.add(BigInteger.ONE)) {
                     logger.info("Fetching vote at index " + i);
                     Tuple3<String, String, String> tuple = ballot.getVote(i).send();
                     logger.info("Vote at index " + i + " fetched");
 
-                    CipherTextWrapper wrapper = new CipherTextWrapper(
-                        tuple.getValue2(),
-                        tuple.getValue3()
-                    );
+                    logger.info("[" + tuple.getValue1() + "] Deserializing vote and proof...");
+                    CipherText cipherText = CipherTextSerializer.fromString(tuple.getValue2());
+                    MembershipProof proof = MembershipProofSerializer.fromString(tuple.getValue3());
+                    logger.info("[" + tuple.getValue1() + "] Deserialized. Verifying proof...");
+                    boolean isValid = this.encryptionManager.verifyProof(cipherText, proof);
 
-                    // TODO: vote should not be decrypted here!
-                    ModInteger vote = this.encryptionManager.decrypt(wrapper);
-                    votes.put(tuple.getValue1(), vote.asBigInteger());
+                    if (isValid) {
+                        logger.info("[" + tuple.getValue1() + "] Proof is valid. Adding to result...");
+                        counter = counter.operate(cipherText);
+                    } else {
+                        logger.warning("[" + tuple.getValue1() + "] Proof is invalid. Skipping that vote.");
+                    }
                 }
 
-                response = new GetResultResponse(Status.SUCCESS, "Successfully fetched votes.", votes);
+                // this may take quite a while...
+                BigInteger totalYes = this.encryptionManager.decrypt(counter).asBigInteger();
+                BigInteger totalNo = totalVotes.subtract(totalYes);
+
+                logger.info("Voting result is: (" + totalYes.toString(10) + "/" + totalNo.toString(10) + ") yes votes of a total of " + totalVotes.toString(10));
+
+                response = new GetResultResponse(Status.SUCCESS, "Successfully fetched votes.", totalYes, totalNo, totalVotes);
             } catch (Exception e) {
                 logger.severe("Failed to submit vote on ballot contract at " + contractAddress);
                 e.printStackTrace();
 
-                response = new GetResultResponse(Status.ERROR, "Fetching votes failed: " + e.getMessage(), null);
+                response = new GetResultResponse(Status.ERROR, "Fetching votes failed: " + e.getMessage(), null, null, null);
             }
 
             logger.info("Sending get votes response to subscribers at topic " + TopicPublisher.META_TOPIC);
