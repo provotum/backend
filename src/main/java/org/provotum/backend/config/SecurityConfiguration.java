@@ -22,6 +22,9 @@ public class SecurityConfiguration {
 
     private static final Logger logger = Logger.getLogger(SecurityConfiguration.class.getName());
 
+    private static final int RSA_KEY_LENGTH = 1024;
+    private static final int EL_GAMAL_KEY_LENGTH = 160;
+
     private PublicKey publicKey;
     private PrivateKey privateKey;
 
@@ -35,7 +38,7 @@ public class SecurityConfiguration {
     public SecurityConfiguration() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException {
         logger.info("Generating voting election keypair.");
         ElGamalParametersGenerator generator = new ElGamalParametersGenerator();
-        generator.init(160, 20, new SecureRandom());
+        generator.init(EL_GAMAL_KEY_LENGTH, 20, new SecureRandom());
         ElGamalParameters parameters = generator.generateParameters();
 
         ElGamalParameterSpec elGamalParameterSpec = new ElGamalParameterSpec(parameters.getP(), parameters.getG());
@@ -53,9 +56,11 @@ public class SecurityConfiguration {
         this.publicKey = new PublicKey(pubKey);
         this.privateKey = new PrivateKey(privKey);
 
+        logger.info("Generating RSA encryption keypair.");
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024);
+        keyGen.initialize(RSA_KEY_LENGTH);
         this.rsaKeyPair = keyGen.generateKeyPair();
+        logger.info("Generated RSA encryption keypair.");
     }
 
     public PublicKey getPublicKey() {
