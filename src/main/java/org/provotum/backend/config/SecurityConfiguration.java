@@ -5,15 +5,17 @@ import org.bouncycastle.crypto.params.ElGamalParameters;
 import org.bouncycastle.jce.interfaces.ElGamalPrivateKey;
 import org.bouncycastle.jce.interfaces.ElGamalPublicKey;
 import org.bouncycastle.jce.spec.ElGamalParameterSpec;
-import org.provotum.backend.ethereum.accessor.ZeroKnowledgeContractAccessor;
+import org.provotum.backend.timer.EvaluationTimer;
 import org.provotum.security.elgamal.PrivateKey;
 import org.provotum.security.elgamal.PublicKey;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 
 import java.security.*;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 @Configuration
@@ -35,8 +37,10 @@ public class SecurityConfiguration {
         return new PropertySourcesPlaceholderConfigurer();
     }
 
-    public SecurityConfiguration() throws InvalidAlgorithmParameterException, NoSuchAlgorithmException {
+    @Autowired
+    public SecurityConfiguration(EvaluationTimer timer) throws InvalidAlgorithmParameterException, NoSuchAlgorithmException {
         logger.info("Generating voting election keypair.");
+        UUID uuid = timer.start();
         ElGamalParametersGenerator generator = new ElGamalParametersGenerator();
         generator.init(EL_GAMAL_KEY_LENGTH, 20, new SecureRandom());
         ElGamalParameters parameters = generator.generateParameters();
@@ -48,6 +52,9 @@ public class SecurityConfiguration {
 
         KeyPair keyPair = keyPairGeneratorSpi.generateKeyPair();
 
+        EvaluationTimer.Duration duration = timer.end(uuid);
+        timer.logDuration(EvaluationTimer.LogCategory.KEY_GENERATION_EL_GAMAL, duration);
+
         logger.info("Generated voting election keypair.");
 
         ElGamalPublicKey pubKey = (ElGamalPublicKey) keyPair.getPublic();
@@ -57,9 +64,12 @@ public class SecurityConfiguration {
         this.privateKey = new PrivateKey(privKey);
 
         logger.info("Generating RSA encryption keypair.");
+        uuid = timer.start();
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
         keyGen.initialize(RSA_KEY_LENGTH);
         this.rsaKeyPair = keyGen.generateKeyPair();
+        duration = timer.end(uuid);
+        timer.logDuration(EvaluationTimer.LogCategory.KEY_GENERATION_RSA, duration);
         logger.info("Generated RSA encryption keypair.");
     }
 

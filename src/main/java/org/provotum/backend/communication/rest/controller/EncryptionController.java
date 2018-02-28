@@ -5,6 +5,7 @@ import org.provotum.backend.communication.rest.message.vote.EncryptionResponse;
 import org.provotum.backend.communication.rest.message.vote.VerifyProofRequest;
 import org.provotum.backend.security.CipherTextWrapper;
 import org.provotum.backend.security.EncryptionManager;
+import org.provotum.backend.timer.EvaluationTimer;
 import org.provotum.security.elgamal.additive.CipherText;
 import org.provotum.security.elgamal.proof.noninteractive.MembershipProof;
 import org.provotum.security.serializer.CipherTextSerializer;
@@ -19,6 +20,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 @RestController
@@ -28,10 +30,12 @@ public class EncryptionController {
     private static final String CONTEXT = "/encryption";
 
     private EncryptionManager encryptionManager;
+    private EvaluationTimer timer;
 
     @Autowired
-    public EncryptionController(EncryptionManager encryptionManager) {
+    public EncryptionController(EncryptionManager encryptionManager, EvaluationTimer timer) {
         this.encryptionManager = encryptionManager;
+        this.timer = timer;
     }
 
     @RequestMapping(value = CONTEXT + "/generate", method = RequestMethod.POST)
