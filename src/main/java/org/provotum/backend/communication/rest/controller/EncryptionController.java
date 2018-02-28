@@ -2,10 +2,16 @@ package org.provotum.backend.communication.rest.controller;
 
 import org.provotum.backend.communication.rest.message.vote.EncryptionRequest;
 import org.provotum.backend.communication.rest.message.vote.EncryptionResponse;
+import org.provotum.backend.communication.rest.message.vote.VerifyProofRequest;
 import org.provotum.backend.security.CipherTextWrapper;
 import org.provotum.backend.security.EncryptionManager;
+import org.provotum.security.elgamal.additive.CipherText;
+import org.provotum.security.elgamal.proof.noninteractive.MembershipProof;
+import org.provotum.security.serializer.CipherTextSerializer;
+import org.provotum.security.serializer.MembershipProofSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.crypto.BadPaddingException;
@@ -44,5 +50,28 @@ public class EncryptionController {
         }
 
         return new EncryptionResponse(cipherTextWrapper.getCiphertext(), cipherTextWrapper.getProof(), cipherTextWrapper.getRandom());
+    }
+
+    @RequestMapping(value = CONTEXT + "/verify", method = RequestMethod.POST)
+    public ResponseEntity verifyProof(@RequestBody VerifyProofRequest proofRequest) {
+        logger.info("Received request to verify proof.");
+
+        CipherText cipherText = CipherTextSerializer.fromString(proofRequest.getCiphertext());
+        MembershipProof proof = MembershipProofSerializer.fromString(proofRequest.getProof());
+
+        try {
+            boolean isProven = this.encryptionManager.verifyProof(cipherText, proof);
+
+            if (isProven) {
+                return ResponseEntity.status(HttpStatus.OK).body(null);
+            } else {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            }
+        } catch (Exception e) {
+            logger.severe("Failed to verify proof: " + e.getMessage());
+            e.printStackTrace();
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
     }
 }

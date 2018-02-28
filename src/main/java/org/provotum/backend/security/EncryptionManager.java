@@ -47,7 +47,7 @@ public class EncryptionManager {
     }
 
     public CipherText generateZeroVote() {
-        ModInteger votingMessage = new ModInteger(0, this.publicKey.getP());
+        ModInteger votingMessage = new ModInteger("0", this.publicKey.getP());
         IHomomorphicEncryption<CipherText> encryption = new Encryption();
 
         return encryption.encrypt(this.publicKey, votingMessage);
@@ -57,7 +57,7 @@ public class EncryptionManager {
         logger.info("Starting to encrypt vote and generate corresponding proof.");
 
         // set the vote modulus the prime number
-        ModInteger votingMessage = new ModInteger(vote, this.publicKey.getP());
+        ModInteger votingMessage = new ModInteger(Integer.toString(vote), this.publicKey.getP());
 
         // encrypt the message
         logger.info("Starting to encrypt vote.");
@@ -95,6 +95,7 @@ public class EncryptionManager {
 
         return CipherTextSerializer.fromString(ciphertext, new ModInteger(random.toString(), this.publicKey.getQ()));
     }
+
 
     public MembershipProof deserializeMembershipProof(String proof) {
         return MembershipProofSerializer.fromString(proof);
