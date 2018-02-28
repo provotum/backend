@@ -1,7 +1,6 @@
 package org.provotum.backend.communication.rest.controller;
 
 import org.provotum.backend.communication.rest.message.deployment.BallotDeploymentRequest;
-import org.provotum.backend.communication.rest.message.vote.VoteRequest;
 import org.provotum.backend.ethereum.accessor.BallotContractAccessor;
 import org.provotum.backend.ethereum.config.BallotContractConfig;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,12 +34,6 @@ public class BallotController {
                 request.getElection().getQuestion(),
                 request.getAddresses().getZeroKnowledge())
         );
-    }
-
-    @RequestMapping(value = CONTEXT + "/{contractAddress}/vote", method = RequestMethod.POST)
-    @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
-    public void vote(@PathVariable String contractAddress, @RequestBody VoteRequest voteRequest) {
-        logger.severe("Vote endpoint is deprecated. Not submitting vote to Ethereum.");
     }
 
     @RequestMapping(value = CONTEXT + "/{contractAddress}/open-vote", method = RequestMethod.POST)

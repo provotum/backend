@@ -21,17 +21,11 @@ public class EthereumConfiguration {
         return new PropertySourcesPlaceholderConfigurer();
     }
 
-    @Value( "${ethereum.wallet.location}")
+    @Value("${ethereum.wallet.location}")
     private String ethereumWalletLocation;
 
-    @Value( "${ethereum.wallet.password}")
+    @Value("${ethereum.wallet.password}")
     private String ethereumWalletPassword;
-
-    @Value( "${ethereum.voter-wallet.location}")
-    private String ethereumVoterWalletLocation;
-
-    @Value( "${ethereum.voter-wallet.password}")
-    private String ethereumVoterWalletPassword;
 
     public Credentials getWalletCredentials() {
         File wallet = new File(this.ethereumWalletLocation);
@@ -42,25 +36,6 @@ public class EthereumConfiguration {
 
         try {
             return WalletUtils.loadCredentials(this.ethereumWalletPassword, wallet);
-        } catch (IOException | CipherException e) {
-            throw new IllegalStateException("Failed to load credentials from path " + wallet.getAbsolutePath() + ": " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * @deprecated Use a public-private key instead of the voter credentials
-     * @return The voter credentials
-     */
-    @Deprecated
-    public Credentials getVoterCredentials() {
-        File wallet = new File(this.ethereumVoterWalletLocation);
-
-        if (! wallet.exists() || wallet.isDirectory()) {
-            throw new IllegalArgumentException("Wallet does not exist or is a directory at path " + wallet.getAbsolutePath());
-        }
-
-        try {
-            return WalletUtils.loadCredentials(this.ethereumVoterWalletPassword, wallet);
         } catch (IOException | CipherException e) {
             throw new IllegalStateException("Failed to load credentials from path " + wallet.getAbsolutePath() + ": " + e.getMessage(), e);
         }
