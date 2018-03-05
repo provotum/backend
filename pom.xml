@@ -6,7 +6,7 @@
 
     <groupId>org.provotum.backend</groupId>
     <artifactId>provotum-backend</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -78,7 +78,7 @@
         <dependency>
             <groupId>org.provotum.security</groupId>
             <artifactId>provotum-security</artifactId>
-            <version>0.2.0</version>
+            <version>0.3.0</version>
         </dependency>
     </dependencies>
 
