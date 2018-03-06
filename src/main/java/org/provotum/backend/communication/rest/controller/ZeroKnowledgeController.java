@@ -26,9 +26,6 @@ public class ZeroKnowledgeController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void deployZeroKnowledge(@RequestBody ZeroKnowledgeDeploymentRequest request) {
         logger.info("Received zero-knowledge deployment request");
-
-        // TODO: validate request
-
         this.zeroKnowledgeContractAccessor.deploy(new ZeroKnowledgeContractConfig());
     }
 
