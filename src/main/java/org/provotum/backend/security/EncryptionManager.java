@@ -1,5 +1,6 @@
 package org.provotum.backend.security;
 
+import org.bouncycastle.math.raw.Mod;
 import org.provotum.backend.config.SecurityConfiguration;
 import org.provotum.backend.timer.EvaluationTimer;
 import org.provotum.security.api.IHomomorphicEncryption;
@@ -142,6 +143,32 @@ public class EncryptionManager {
     public boolean verifyProof(CipherText cipherText, IMembershipProof<CipherText> proof) {
         UUID uuid = this.timer.start();
         boolean isSuccess = proof.verify(this.securityConfiguration.getPublicKey(), cipherText, this.voteDomain);
+        EvaluationTimer.Duration duration = this.timer.end(uuid);
+
+        if (isSuccess) {
+            this.timer.logDuration(EvaluationTimer.LogCategory.VERIFICATION_PROOF_SUCCESSFUL, duration);
+        } else {
+            this.timer.logDuration(EvaluationTimer.LogCategory.VERIFICATION_PROOF_UNSUCCESSFUL, duration);
+        }
+
+        return isSuccess;
+    }
+
+    public MembershipProof createSumProof(BigInteger sum, CipherText sumCipherText) {
+        List<ModInteger> domain = new ArrayList<>();
+        domain.add(new ModInteger(sum));
+
+        UUID uuid = this.timer.start();
+        MembershipProof resultProof = MembershipProof.commit(this.securityConfiguration.getPublicKey(), new ModInteger(sum), sumCipherText, domain);
+        EvaluationTimer.Duration duration = this.timer.end(uuid);
+        this.timer.logDuration(EvaluationTimer.LogCategory.SUM_PROOF, duration);
+
+        return resultProof;
+    }
+
+    public boolean verifySumProof(CipherText cipherText, IMembershipProof<CipherText> proof, List<ModInteger> domain) {
+        UUID uuid = this.timer.start();
+        boolean isSuccess = proof.verify(this.securityConfiguration.getPublicKey(), cipherText, domain);
         EvaluationTimer.Duration duration = this.timer.end(uuid);
 
         if (isSuccess) {

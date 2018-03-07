@@ -3,9 +3,11 @@ package org.provotum.backend.communication.rest.controller;
 import org.provotum.backend.communication.rest.message.vote.EncryptionRequest;
 import org.provotum.backend.communication.rest.message.vote.EncryptionResponse;
 import org.provotum.backend.communication.rest.message.vote.VerifyProofRequest;
+import org.provotum.backend.communication.rest.message.vote.VerifySumProofRequest;
 import org.provotum.backend.security.CipherTextWrapper;
 import org.provotum.backend.security.EncryptionManager;
 import org.provotum.backend.timer.EvaluationTimer;
+import org.provotum.security.arithmetic.ModInteger;
 import org.provotum.security.elgamal.additive.CipherText;
 import org.provotum.security.elgamal.proof.noninteractive.MembershipProof;
 import org.provotum.security.serializer.CipherTextSerializer;
@@ -20,6 +22,8 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -73,6 +77,31 @@ public class EncryptionController {
             }
         } catch (Exception e) {
             logger.severe("Failed to verify proof: " + e.getMessage());
+            e.printStackTrace();
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+        }
+    }
+
+    @RequestMapping(value = CONTEXT + "/verify-sum", method = RequestMethod.POST)
+    public ResponseEntity verifySumProof(@RequestBody VerifySumProofRequest proofRequest) {
+        logger.info("Received request to verify sum proof.");
+
+        CipherText cipherText = CipherTextSerializer.fromString(proofRequest.getCiphertext());
+        MembershipProof proof = MembershipProofSerializer.fromString(proofRequest.getProof());
+
+        try {
+            List<ModInteger> sumDomain = new ArrayList<>();
+            sumDomain.add(new ModInteger(proofRequest.getSum()));
+            boolean isProven = this.encryptionManager.verifySumProof(cipherText, proof, sumDomain);
+
+            if (isProven) {
+                return ResponseEntity.status(HttpStatus.OK).body(null);
+            } else {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(null);
+            }
+        } catch (Exception e) {
+            logger.severe("Failed to verify sum proof: " + e.getMessage());
             e.printStackTrace();
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(null);

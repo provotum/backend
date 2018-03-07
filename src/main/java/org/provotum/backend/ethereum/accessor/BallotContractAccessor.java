@@ -16,8 +16,11 @@ import org.provotum.backend.ethereum.base.TransactionReceiptStatus;
 import org.provotum.backend.ethereum.config.BallotContractConfig;
 import org.provotum.backend.ethereum.wrappers.Ballot;
 import org.provotum.backend.security.EncryptionManager;
+import org.provotum.security.arithmetic.ModInteger;
 import org.provotum.security.elgamal.additive.CipherText;
 import org.provotum.security.elgamal.proof.noninteractive.MembershipProof;
+import org.provotum.security.serializer.CipherTextSerializer;
+import org.provotum.security.serializer.MembershipProofSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.web3j.protocol.Web3j;
@@ -29,6 +32,8 @@ import rx.Scheduler;
 import rx.schedulers.Schedulers;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -298,7 +303,22 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 BigInteger totalYes = this.encryptionManager.decryptSum(counter).asBigInteger();
                 BigInteger totalNo = totalVotes.subtract(totalYes);
 
+                logger.info("Creating proof for sum...");
+                MembershipProof sumProof = this.encryptionManager.createSumProof(totalYes, counter);
+
+                List<ModInteger> sumDomain = new ArrayList<>();
+                sumDomain.add(new ModInteger(totalYes));
+                boolean isVerified = this.encryptionManager.verifySumProof(counter, sumProof, sumDomain);
+
+                if (! isVerified) {
+                    throw new RuntimeException("Proof for sum is invalid");
+                }
+
                 logger.info("Voting result is: (" + totalYes.toString(10) + "/" + totalNo.toString(10) + ") yes votes of a total of " + totalVotes.toString(10));
+
+                // setting the result on ethereum
+                logger.info("Publishing sum along with its ciphertext and proof to the blockchain.");
+                this.setSum(contractAddress, totalYes, CipherTextSerializer.serialize(counter), MembershipProofSerializer.serialize(sumProof));
 
                 response = new GetResultResponse(Status.SUCCESS, "Successfully fetched votes.", totalYes, totalNo, totalVotes);
             } catch (Exception e) {
@@ -313,6 +333,41 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 TopicPublisher.META_TOPIC,
                 response
             );
+        });
+    }
+
+    /**
+     * Fetch the voting question from the Ballot contract.
+     *
+     * @param contractAddress The address of the ballot contract.
+     */
+    public void setSum(String contractAddress, BigInteger sum, String ciphertext, String proof) {
+        logger.info("Starting setting election result in new thread.");
+
+        // starting execution in a new thread to avoid blocking.
+        this.executorService.submit(() -> {
+            logger.info("Setting election result in new thread started.");
+
+            try {
+                TransactionReceipt receipt = Ballot.load(
+                    contractAddress,
+                    this.web3j,
+                    this.ethereumConfiguration.getWalletCredentials(),
+                    Ballot.GAS_PRICE,
+                    Ballot.GAS_LIMIT
+                ).setSumProof(sum, ciphertext, proof).send();
+
+                // this field is only available from the Byzantium blocks on
+                if (null != receipt.getStatus() && ! TransactionReceiptStatus.SUCCESS.getValue().equals(receipt.getStatus())) {
+                    logger.severe("Failed to set election result due to failed transaction. Transaction hash is " + receipt.getTransactionHash() + ". Logs are " + receipt.getLogsBloom());
+                } else {
+                    logger.info("Election results set. Transaction hash is " + receipt.getTransactionHash());
+                }
+
+            } catch (Exception e) {
+                logger.severe("Failed to set election result on ballot contract at " + contractAddress);
+                e.printStackTrace();
+            }
         });
     }
 
