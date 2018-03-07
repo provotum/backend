@@ -32,16 +32,12 @@ public class EncryptionManager {
 
     private static final Logger logger = Logger.getLogger(EncryptionManager.class.getName());
 
-    private PublicKey publicKey;
-    private PrivateKey privateKey;
-    private KeyPair rsaKeyPair;
+    private SecurityConfiguration securityConfiguration;
     private List<ModInteger> voteDomain;
     private EvaluationTimer timer;
 
     public EncryptionManager(SecurityConfiguration securityConfiguration, EvaluationTimer timer) {
-        this.publicKey = securityConfiguration.getPublicKey();
-        this.privateKey = securityConfiguration.getPrivateKey();
-        this.rsaKeyPair = securityConfiguration.getRsaKeyPair();
+        this.securityConfiguration = securityConfiguration;
         this.timer = timer;
 
         // add the values which we currently accept as a valid vote
@@ -51,23 +47,23 @@ public class EncryptionManager {
     }
 
     public CipherText generateZeroVote() {
-        ModInteger votingMessage = new ModInteger("0", this.publicKey.getP());
+        ModInteger votingMessage = new ModInteger("0", this.securityConfiguration.getPublicKey().getP());
         IHomomorphicEncryption<CipherText> encryption = new Encryption();
 
-        return encryption.encrypt(this.publicKey, votingMessage);
+        return encryption.encrypt(this.securityConfiguration.getPublicKey(), votingMessage);
     }
 
     public CipherTextWrapper encryptVoteAndGenerateProof(int vote) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         logger.info("Starting to encrypt vote and generate corresponding proof.");
 
         // set the vote modulus the prime number
-        ModInteger votingMessage = new ModInteger(Integer.toString(vote), this.publicKey.getP());
+        ModInteger votingMessage = new ModInteger(Integer.toString(vote), this.securityConfiguration.getPublicKey().getP());
 
         // encrypt the message
         logger.info("Starting to encrypt vote.");
         IHomomorphicEncryption<CipherText> encryption = new Encryption();
         UUID uuid = this.timer.start();
-        CipherText cipherText = encryption.encrypt(this.publicKey, votingMessage);
+        CipherText cipherText = encryption.encrypt(this.securityConfiguration.getPublicKey(), votingMessage);
         EvaluationTimer.Duration duration = this.timer.end(uuid);
         this.timer.logDuration(EvaluationTimer.LogCategory.ENCRYPTION_CIPHERTEXT, duration);
         logger.info("Vote encrypted.");
@@ -77,7 +73,7 @@ public class EncryptionManager {
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 
         // encrypt the plaintext using the public key
-        cipher.init(Cipher.ENCRYPT_MODE, this.rsaKeyPair.getPublic());
+        cipher.init(Cipher.ENCRYPT_MODE, this.securityConfiguration.getRsaKeyPair().getPublic());
         uuid = this.timer.start();
         byte[] randomValueCipherText = cipher.doFinal(cipherText.getR().finalized().toByteArray());
         duration = this.timer.end(uuid);
@@ -85,7 +81,7 @@ public class EncryptionManager {
 
         logger.info("Generating proof.");
         uuid = this.timer.start();
-        MembershipProof proof = MembershipProof.commit(this.publicKey, votingMessage, cipherText, this.voteDomain);
+        MembershipProof proof = MembershipProof.commit(this.securityConfiguration.getPublicKey(), votingMessage, cipherText, this.voteDomain);
         duration = this.timer.end(uuid);
         this.timer.logDuration(EvaluationTimer.LogCategory.GENERATING_PROOF, duration);
         logger.info("Proof generated.");
@@ -109,14 +105,14 @@ public class EncryptionManager {
 
     public CipherText deserializeCiphertext(String ciphertext, byte[] encryptedRandom) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException {
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.DECRYPT_MODE, this.rsaKeyPair.getPrivate());
+        cipher.init(Cipher.DECRYPT_MODE, this.securityConfiguration.getRsaKeyPair().getPrivate());
         UUID uuid = this.timer.start();
         BigInteger random = new BigInteger(cipher.doFinal(encryptedRandom));
         EvaluationTimer.Duration duration = this.timer.end(uuid);
         this.timer.logDuration(EvaluationTimer.LogCategory.DECRYPTION_RANDOM, duration);
 
         uuid = this.timer.start();
-        CipherText cipherText = CipherTextSerializer.fromString(ciphertext, new ModInteger(random.toString(), this.publicKey.getQ()));
+        CipherText cipherText = CipherTextSerializer.fromString(ciphertext, new ModInteger(random.toString(), this.securityConfiguration.getPublicKey().getQ()));
         duration = this.timer.end(uuid);
         this.timer.logDuration(EvaluationTimer.LogCategory.DESERIALIZATION_CIPHERTEXT, duration);
 
@@ -136,7 +132,7 @@ public class EncryptionManager {
     public ModInteger decryptSum(CipherText cipherText) {
         IHomomorphicEncryption<CipherText> encryption = new Encryption();
         UUID uuid = this.timer.start();
-        ModInteger result = encryption.decrypt(this.privateKey, cipherText);
+        ModInteger result = encryption.decrypt(this.securityConfiguration.getPrivateKey(), cipherText);
         EvaluationTimer.Duration duration = this.timer.end(uuid);
         this.timer.logDuration(EvaluationTimer.LogCategory.DECRYPTION_CIPHERTEXT, duration);
 
@@ -145,7 +141,7 @@ public class EncryptionManager {
 
     public boolean verifyProof(CipherText cipherText, IMembershipProof<CipherText> proof) {
         UUID uuid = this.timer.start();
-        boolean isSuccess = proof.verify(this.publicKey, cipherText, this.voteDomain);
+        boolean isSuccess = proof.verify(this.securityConfiguration.getPublicKey(), cipherText, this.voteDomain);
         EvaluationTimer.Duration duration = this.timer.end(uuid);
 
         if (isSuccess) {

@@ -1,6 +1,5 @@
 package org.provotum.backend.communication.rest.controller;
 
-import org.provotum.backend.communication.rest.message.deployment.ZeroKnowledgeDeploymentRequest;
 import org.provotum.backend.ethereum.accessor.ZeroKnowledgeContractAccessor;
 import org.provotum.backend.ethereum.config.ZeroKnowledgeContractConfig;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +23,7 @@ public class ZeroKnowledgeController {
 
     @RequestMapping(value = CONTEXT + "/deploy", method = RequestMethod.POST)
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public void deployZeroKnowledge(@RequestBody ZeroKnowledgeDeploymentRequest request) {
+    public void deployZeroKnowledge() {
         logger.info("Received zero-knowledge deployment request");
         this.zeroKnowledgeContractAccessor.deploy(new ZeroKnowledgeContractConfig());
     }

@@ -10,28 +10,26 @@ import java.util.Map;
 
 public class GetResultResponse extends AResponse {
 
-    private Map<String, Map<String, BigInteger>> votes = new HashMap<>();
+    private Map<String, BigInteger> votes = new HashMap<>();
     private final ResponseType responseType = ResponseType.GET_RESULTS_EVENT;
 
     public GetResultResponse(String id, Status status, String message, BigInteger yes, BigInteger no, BigInteger total) {
         super(id, status, message);
 
-        votes.put("votes", new HashMap<>());
-        votes.get("votes").put("yes", yes);
-        votes.get("votes").put("no", no);
-        votes.get("votes").put("total", total);
+        votes.put("yes", yes);
+        votes.put("no", no);
+        votes.put("total", total);
     }
 
     public GetResultResponse(Status status, String message, BigInteger yes, BigInteger no, BigInteger total) {
         super(status, message);
 
-        votes.put("votes", new HashMap<>());
-        votes.get("votes").put("yes", yes);
-        votes.get("votes").put("no", no);
-        votes.get("votes").put("total", total);
+        votes.put("yes", yes);
+        votes.put("no", no);
+        votes.put("total", total);
     }
 
-    public Map<String, Map<String, BigInteger>> getVotes() {
+    public Map<String, BigInteger> getVotes() {
         return votes;
     }
 

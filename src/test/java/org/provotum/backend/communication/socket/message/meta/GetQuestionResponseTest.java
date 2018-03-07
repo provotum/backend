@@ -16,11 +16,10 @@ public class GetQuestionResponseTest extends TestCase {
         assertEquals(Status.SUCCESS, response.getStatus());
         assertEquals("message", response.getMessage());
 
-        Map<String, Map<String, BigInteger>> votes = response.getVotes();
-        assertNotNull(votes.get("votes"));
-        assertEquals(votes.get("votes").get("yes"), BigInteger.ONE);
-        assertEquals(votes.get("votes").get("no"), BigInteger.ZERO);
-        assertEquals(votes.get("votes").get("total"), BigInteger.ONE);
+        Map<String, BigInteger> votes = response.getVotes();
+        assertEquals(votes.get("yes"), BigInteger.ONE);
+        assertEquals(votes.get("no"), BigInteger.ZERO);
+        assertEquals(votes.get("total"), BigInteger.ONE);
 
         assertEquals(ResponseType.GET_RESULTS_EVENT, response.getResponseType());
     }
@@ -32,10 +31,9 @@ public class GetQuestionResponseTest extends TestCase {
         assertEquals(Status.SUCCESS, response.getStatus());
         assertEquals("message", response.getMessage());
 
-        Map<String, Map<String, BigInteger>> votes = response.getVotes();
-        assertNotNull(votes.get("votes"));
-        assertEquals(votes.get("votes").get("yes"), BigInteger.ONE);
-        assertEquals(votes.get("votes").get("no"), BigInteger.ZERO);
-        assertEquals(votes.get("votes").get("total"), BigInteger.ONE);
+        Map<String, BigInteger> votes = response.getVotes();
+        assertEquals(votes.get("yes"), BigInteger.ONE);
+        assertEquals(votes.get("no"), BigInteger.ZERO);
+        assertEquals(votes.get("total"), BigInteger.ONE);
     }
 }
