@@ -276,6 +276,7 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 );
 
                 BigInteger totalVotes = ballot.getTotalVotes().send();
+                BigInteger invalidVotes = BigInteger.ZERO;
                 logger.info("Fetched a total of " + totalVotes + " votes from the Ballot contract at " + contractAddress);
 
                 CipherText counter = this.encryptionManager.generateZeroVote();
@@ -296,12 +297,13 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                         counter = counter.operate(cipherText);
                     } else {
                         logger.warning("[" + tuple.getValue1() + "] Proof is invalid. Skipping that vote.");
+                        invalidVotes = invalidVotes.add(BigInteger.ONE);
                     }
                 }
 
                 // this may take quite a while...
                 BigInteger totalYes = this.encryptionManager.decryptSum(counter).asBigInteger();
-                BigInteger totalNo = totalVotes.subtract(totalYes);
+                BigInteger totalNo = totalVotes.subtract(totalYes).subtract(invalidVotes);
 
                 logger.info("Creating proof for sum...");
                 MembershipProof sumProof = this.encryptionManager.createSumProof(totalYes, counter);
@@ -314,18 +316,18 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                     throw new RuntimeException("Proof for sum is invalid");
                 }
 
-                logger.info("Voting result is: (" + totalYes.toString(10) + "/" + totalNo.toString(10) + ") yes votes of a total of " + totalVotes.toString(10));
+                logger.info("Voting result is: (" + totalYes.toString(10) + " vs. " + totalNo.toString(10) + ") of a total of " + totalVotes.toString(10) + " with " + invalidVotes.toString(10) + " invalid votes");
 
                 // setting the result on ethereum
                 logger.info("Publishing sum along with its ciphertext and proof to the blockchain.");
                 this.setSum(contractAddress, totalYes, CipherTextSerializer.serialize(counter), MembershipProofSerializer.serialize(sumProof));
 
-                response = new GetResultResponse(Status.SUCCESS, "Successfully fetched votes.", totalYes, totalNo, totalVotes);
+                response = new GetResultResponse(Status.SUCCESS, "Successfully fetched votes.", totalYes, totalNo, totalVotes, invalidVotes);
             } catch (Exception e) {
                 logger.severe("Failed to submit vote on ballot contract at " + contractAddress);
                 e.printStackTrace();
 
-                response = new GetResultResponse(Status.ERROR, "Fetching votes failed: " + e.getMessage(), null, null, null);
+                response = new GetResultResponse(Status.ERROR, "Fetching votes failed: " + e.getMessage(), null, null, null, null);
             }
 
             logger.info("Sending get votes response to subscribers at topic " + TopicPublisher.META_TOPIC);
