@@ -5,8 +5,11 @@ import org.provotum.backend.ethereum.accessor.BallotContractAccessor;
 import org.provotum.backend.ethereum.config.BallotContractConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 @RestController
@@ -34,6 +37,21 @@ public class BallotController {
                 request.getElection().getQuestion(),
                 request.getAddresses().getZeroKnowledge())
         );
+    }
+
+    @RequestMapping(value = CONTEXT + "/address", method = RequestMethod.GET)
+    public ResponseEntity getBallotContractAddress() {
+        Map<String, String> resultMap = new HashMap<>();
+
+        if (null == this.ballotContractAccessor.getBallotAddress()) {
+            resultMap.put("address", null);
+
+            return ResponseEntity.status(HttpStatus.PRECONDITION_FAILED).body(resultMap);
+        }
+
+        resultMap.put("address", this.ballotContractAccessor.getBallotAddress());
+
+        return ResponseEntity.status(HttpStatus.OK).body(resultMap);
     }
 
     @RequestMapping(value = CONTEXT + "/{contractAddress}/open-vote", method = RequestMethod.POST)

@@ -51,6 +51,8 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
     private Scheduler subscriptionScheduler;
     private ExecutorService executorService;
 
+    private String ballotContractAddress;
+
     @Autowired
     public BallotContractAccessor(Web3j web3j, EthereumConfiguration ethereumConfiguration, TopicPublisher topicPublisher, EncryptionManager encryptionManager) {
         this.web3j = web3j;
@@ -92,6 +94,7 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 subscribeToChangeEvent(ballot);
 
                 logger.info("Ballot deployment was successful. Contract address is: " + ballot.getContractAddress());
+                this.ballotContractAddress = ballot.getContractAddress();
                 response = new BallotDeploymentResponse(Status.SUCCESS, "Deployment successful", new Contract("ballot", ballot.getContractAddress()));
             } catch (Exception e) {
                 logger.severe("Failed to deploy ballot: " + e.getMessage());
@@ -107,6 +110,15 @@ public class BallotContractAccessor extends AContractAccessor<Ballot, BallotCont
                 response
             );
         });
+    }
+
+    /**
+     * Returns the address of the last deployed ballot contract.
+     *
+     * @return The address or null, if no contract has yet been deployed.
+     */
+    public String getBallotAddress() {
+        return this.ballotContractAddress;
     }
 
     @Override
