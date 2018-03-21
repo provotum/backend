@@ -70,3 +70,9 @@ To run the app with the configured parameters, invoke
 ```
    mvn spring-boot:run
 ```
+
+# Known Issues
+ **NOTE**: If it seems that the contract creations do not reach the sealer nodes, you should increase the maximum heap space of Java: 
+ ```
+ mvn spring-boot:run -Drun.jvmArguments="-Xmx768m" -Drun.profiles=dev
+ ```
